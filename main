@@ -1,0 +1,161 @@
+import psycopg2
+
+class Produto:
+    def __init__(self, db_config):
+        try:
+            self._connection = psycopg2.connect(**db_config)
+            self._cursor = self._connection.cursor()
+        except psycopg2.OperationalError as e:
+            print("Erro ao conectar ao banco de dados:", e)
+            exit()
+
+    def close(self):
+        self._cursor.close()
+        self._connection.close()
+
+    def inserir(self, nome, descricao, preco):
+        # Verificar se o produto já existe
+        if self.pesquisar(nome):
+            print("Produto já existente!")
+            return
+        try:
+            self._cursor.execute("INSERT INTO produtos (nome, descricao, preco) VALUES (%s, %s, %s)", (nome, descricao, preco))
+            self._connection.commit()
+            print("Produto inserido com sucesso!")
+        except psycopg2.Error as e:
+            print("Erro ao inserir produto:", e)
+
+    def alterar(self, id, nome, descricao, preco):
+        if not self.exibir(id):
+            print("Produto não encontrado!")
+            return
+        try:
+            self._cursor.execute("UPDATE produtos SET nome=%s, descricao=%s, preco=%s WHERE id=%s", (nome, descricao, preco, id))
+            self._connection.commit()
+            print("Produto alterado com sucesso!")
+        except psycopg2.Error as e:
+            print("Erro ao alterar produto:", e)
+
+    def pesquisar(self, nome):
+        try:
+            self._cursor.execute("SELECT * FROM produtos WHERE nome LIKE %s", (f"%{nome}%",))
+            return self._cursor.fetchall()
+        except psycopg2.Error as e:
+            print("Erro ao pesquisar produto:", e)
+            return []
+
+    def remover(self, id):
+        if not self.exibir(id):
+            print("Produto não encontrado!")
+            return
+        try:
+            self._cursor.execute("DELETE FROM produtos WHERE id=%s", (id,))
+            self._connection.commit()
+            print("Produto removido com sucesso!")
+        except psycopg2.Error as e:
+            print("Erro ao remover produto:", e)
+
+    def listar_todos(self):
+        try:
+            self._cursor.execute("SELECT * FROM produtos")
+            return self._cursor.fetchall()
+        except psycopg2.Error as e:
+            print("Erro ao listar produtos:", e)
+            return []
+
+    def exibir(self, id):
+        try:
+            self._cursor.execute("SELECT * FROM produtos WHERE id=%s", (id,))
+            produto = self._cursor.fetchone()
+            if not produto:
+                print("Produto não encontrado!")
+            return produto
+        except psycopg2.Error as e:
+            print("Erro ao exibir produto:", e)
+            return None
+
+    @staticmethod
+    def menu():
+        print("\nMENU")
+        print("1. Inserir")
+        print("2. Alterar")
+        print("3. Pesquisar por nome")
+        print("4. Remover")
+        print("5. Listar todos")
+        print("6. Exibir um")
+        print("0. Sair")
+
+def main():
+    db_config = {
+        "dbname": "your_dbname", # exemplo:  "your_dbname": myJose
+        "user": "your_user", # exemplo "user": "jose123" 
+        "password": "your_password",  # exemplo   "password":  senha123
+        "host": "your_host", # exemplo host foi 200.148.12.188 
+        "port": "your_port"  # exemplo port foi 1024 
+    }
+
+    produto = Produto(db_config)
+
+    while True:
+        menu()
+        try:
+            choice = int(input("Escolha uma opção: "))
+        except ValueError:
+            print("Por favor, escolha um número válido.")
+            continue
+
+        if choice == 1:
+            nome = input("Nome do produto: ")
+            descricao = input("Descrição: ")
+            try:
+                preco = float(input("Preço: "))
+                if preco < 0:
+                    print("O preço não pode ser negativo!")
+                    continue
+            except ValueError:
+                print("Por favor, insira um valor válido para o preço.")
+                continue
+            produto.inserir(nome, descricao, preco)
+
+               elif choice == 2:
+            try:
+                id = int(input("ID do produto a ser alterado: "))
+                nome = input("Novo nome do produto: ")
+                descricao = input("Nova descrição: ")
+                preco = float(input("Novo preço: "))
+                produto.alterar(id, nome, descricao, preco)
+            except ValueError:
+                print("Por favor, insira valores válidos.")
+
+        elif choice == 3:
+            nome = input("Nome para pesquisa: ")
+            results = produto.pesquisar(nome)
+            for row in results:
+                print(row)
+
+        elif choice == 4:
+            try:
+                id = int(input("ID do produto a ser removido: "))
+                produto.remover(id)
+            except ValueError:
+                print("Por favor, insira um ID válido.")
+
+        elif choice == 5:
+            results = produto.listar_todos()
+            for row in results:
+                print(row)
+
+        elif choice == 6:
+            try:
+                id = int(input("ID do produto a ser exibido: "))
+                print(produto.exibir(id))
+            except ValueError:
+                print("Por favor, insira um ID válido.")
+
+        elif choice == 0:
+            print("Saindo...")
+            produto.close()
+            break
+
+if __name__ == "__main__":
+    main()
