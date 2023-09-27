@@ -3,4 +3,4 @@ CREATE TABLE produtos (
     nome VARCHAR(255) NOT NULL,
     descricao TEXT,
     preco FLOAT NOT NULL
-);
+); 
