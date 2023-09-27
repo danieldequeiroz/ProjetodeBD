@@ -74,6 +74,27 @@ class Produto:
             print("Erro ao exibir produto:", e)
             return None
 
+
+    def relatorio_estoque(self):
+        try:
+            # Recuperar todos os produtos
+            produtos = self.listar_todos()
+
+            # Calcular a quantidade total de produtos
+            total_produtos = len(produtos)
+
+            # Calcular o valor total do estoque
+            valor_total = sum([produto[3] for produto in produtos])  # supondo que o preço esteja na posição 3 da tupla
+
+            # Exibir relatório
+            print("\n--- Relatório de Estoque ---")
+            print(f"Total de produtos cadastrados: {total_produtos}")
+            print(f"Valor total do estoque: {valor_total:.2f}")  # formatado com duas casas decimais
+
+        except psycopg2.Error as e:
+            print("Erro ao gerar relatório de estoque:", e)
+
+
     @staticmethod
     def menu():
         print("\nMENU")
@@ -83,6 +104,7 @@ class Produto:
         print("4. Remover")
         print("5. Listar todos")
         print("6. Exibir um")
+        print("7. Gerar relatório de estoque")
         print("0. Sair")
 
 def main():
@@ -97,8 +119,8 @@ def main():
     produto = Produto(db_config)
 
     while True:
-        menu()
-        try:
+       Produto.menu()
+       try:
             choice = int(input("Escolha uma opção: "))
         except ValueError:
             print("Por favor, escolha um número válido.")
@@ -151,6 +173,9 @@ def main():
                 print(produto.exibir(id))
             except ValueError:
                 print("Por favor, insira um ID válido.")
+
+       elif choice == 7:
+            produto.relatorio_estoque()
 
         elif choice == 0:
             print("Saindo...")
